@@ -421,6 +421,19 @@ class Collector(object):
 
         # Periodically send the host metadata.
         if self._should_send_additional_data('metadata'):
+            # gather metadata with gohai
+            try:
+                if get_os() != 'windows':
+                    command = "./gohai"
+                else:
+                    command = "gohai\gohai.exe"
+                gohai_metadata = subprocess.Popen(
+                    [command], stdout=subprocess.PIPE
+                ).communicate()[0]
+                payload['gohai'] = gohai_metadata
+            except Exception as e:
+                log.warning("gohai command failed with error %s" % str(e))
+
             payload['systemStats'] = get_system_stats()
             payload['meta'] = self._get_metadata()
             self.metadata_cache = payload['meta']
