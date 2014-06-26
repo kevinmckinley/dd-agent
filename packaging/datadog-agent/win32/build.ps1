@@ -5,7 +5,7 @@ $version = "$(python -c "from config import get_version; print get_version()").$
 rm -r build/*
 
 # Build the agent.exe service
-python setup.py py2exe 
+python setup.py py2exe
 mkdir packaging\datadog-agent\win32\install_files\Microsoft.VC90.CRT
 
 cp dist\*.* packaging\datadog-agent\win32\install_files\files
@@ -30,6 +30,9 @@ cp -R ..\..\..\dist\jmxfetch install_files\files\jmxfetch
 
 # Move the images needed for the gui
 cp -R install_files\guidata install_files\files
+
+# Copy gohai
+cp -R ..\..\..\gohai install_files\files\gohai
 
 
 ## Generate the CLI installer with WiX
