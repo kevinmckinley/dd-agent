@@ -15,13 +15,16 @@ NODE_TYPE = 'nodes'
 MAX_DETAILED_QUEUES = 200
 MAX_DETAILED_NODES = 100
 ALERT_THRESHOLD = 0.9 # Post an event in the stream when the number of queues or nodes to collect is above 90% of the limit
-QUEUE_ATTRIBUTES = [ 
+QUEUE_ATTRIBUTES = [
         'active_consumers',
         'consumers',
         'memory',
         'messages',
+        ('messages_details/rate', 'messages.rate'),
         'messages_ready',
-        'messages_unacknowledged'
+        ('messages_ready_details/rate', 'messages_ready.rate'),
+        'messages_unacknowledged',
+        ('messages_unacknowledged_details/rate', 'messages_unacknowledged.rate'),
     ]
 
 NODE_ATTRIBUTES = [
@@ -181,10 +184,21 @@ class RabbitMQ(AgentCheck):
                 tags.append('rabbitmq_%s:%s' % (tag_list[t], tag))
 
         for attribute in ATTRIBUTES[object_type]:
-            value = data.get(attribute, None)
+            if isinstance(attribute, tuple):
+                attribute, metric_name = attribute
+            else:
+                metric_name = attribute
+
+            # Walk down through the data path, e.g. foo/bar => d['foo']['bar']
+            root = data
+            keys = attribute.split('/')
+            for path in keys[:-1]:
+                root = root.get(path, {})
+
+            value = root.get(keys[-1], None)
             if value is not None:
                 try:
-                    self.gauge('rabbitmq.%s.%s' % (METRIC_SUFFIX[object_type], attribute), float(value), tags=tags)
+                    self.gauge('rabbitmq.%s.%s' % (METRIC_SUFFIX[object_type], metric_name), float(value), tags=tags)
                 except ValueError:
                     self.log.debug("Caught ValueError for %s %s = %s  with tags: %s" % (METRIC_SUFFIX[object_type], attribute, value, tags))
 
